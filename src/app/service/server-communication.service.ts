@@ -14,7 +14,14 @@ export class ServerCommunicationService {
                     selectedTimePeriod,
                     selectedAreaID) {
     const http = this.http;
-    const body = {};
+    const body = {
+      'crime': selectedCrimeType,
+      'month': selectedMonth,
+      'week': selectedWeek,
+      'weekday': selectedWeekday,
+      'time': selectedTimePeriod,
+      'areaID': selectedAreaID
+    };
     return new Promise(function(resolve, reject) {
       http.post('', body).subscribe((data) => {
         resolve(data);

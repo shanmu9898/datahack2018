@@ -20,7 +20,17 @@ export class CrimeComponent implements OnInit {
   circles: google.maps.Circle[] = [];
 
   crimeTypes = [
-    'Dummy1', 'Dummy2'
+    'Alcohol-related crimes',
+    'Arson',
+    'Assault',
+    'Burglary',
+    'False pretenses',
+    'Firearm',
+    'Forgery',
+    'Homicide',
+    'Kidnapping',
+    'Robbery',
+    'sex crimes'
   ];
   timePeriods = [
     {'text': '0:00-4:00', value: 200},
@@ -125,7 +135,7 @@ export class CrimeComponent implements OnInit {
         fillOpacity: 0.35,
         map: this.map,
         center: crimeHotSpots[i].center,
-        radius: crimeHotSpots[i].ps * 10
+        radius: crimeHotSpots[i].ps
       });
       const mouseOverText = `Crime: ${crimeHotSpots[i].crime}\nPredicted number of crime: ${crimeHotSpots[i].ps}`;
       // circle is the google.maps.Circle-instance

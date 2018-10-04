@@ -10,21 +10,41 @@ import {ServerCommunicationService} from '../../service/server-communication.ser
   styleUrls: ['./user.component.css']
 })
 export class UserComponent implements OnInit {
-  startPoint: string;
-  endPoint: string;
-  startMarker: any = null;
-  endMarker: any = null;
   mapProp = {
     center: new google.maps.LatLng(AppComponent.LA_LATITUDE, AppComponent.LA_LONGITUDE),
     zoom: 10,
     mapTypeId: google.maps.MapTypeId.ROADMAP
   };
+  transportModes = [
+    {'text': 'Walking', value: 'WALKING'},
+    {'text': 'Driving', value: 'DRIVING'},
+    {'text': 'Transit', value: 'TRANSIT'},
+    {'text': 'Bicycling', value: 'BICYCLING'}
+  ];
+  timePeriods = [
+    {'text': '0:00-4:00', value: 200},
+    {'text': '4:00-8:00', value: 600},
+    {'text': '8:00-12:00', value: 1000},
+    {'text': '12:00-16:00', value: 1400},
+    {'text': '16:00-20:00', value: 1800},
+    {'text': '20:00-24:00', value: 2200},
+  ];
   @ViewChild('gmap') gmapElement: any;
   map: google.maps.Map;
+  startPoint: string;
+  endPoint: string;
+  transportMode: string;
+  timePeriod: number;
+  startMarker: any = null;
+  endMarker: any = null;
   circles: google.maps.Circle[] = [];
   circlesWithinRange = [];
   directionsService;
   directionsDisplay;
+  inputMode = true;
+  routes: any = null;
+  crimeSpotNumber = 0;
+  currentRoute = 0;
   dummyHotSpots = [
     {
       'crime': 'Burglary', 'center': {lat: 34.152235, lng: -118.143683}, 'ps': 60, 'intensity': 3
@@ -41,7 +61,8 @@ export class UserComponent implements OnInit {
   ];
 
   constructor(private communicationService: ServerCommunicationService,
-              private zone: NgZone) { }
+              private zone: NgZone) {
+  }
 
   ngOnInit() {
 
@@ -121,7 +142,7 @@ export class UserComponent implements OnInit {
         fillOpacity: 0.35,
         map: this.map,
         center: crimeHotSpots[i].center,
-        radius: crimeHotSpots[i].ps * 10
+        radius: crimeHotSpots[i].ps
       });
       const mouseOverText = `Crime: ${crimeHotSpots[i].crime}\nPredicted number of crime: ${crimeHotSpots[i].ps}`;
       // circle is the google.maps.Circle-instance
@@ -134,6 +155,11 @@ export class UserComponent implements OnInit {
       });
       this.circles.push(hotSpot);
     }
+  }
+
+  renderRoute(i) {
+    this.directionsDisplay.setRouteIndex(i);
+    this.findNearbyCrimeHotspots(i);
   }
 
   clearCircles() {
@@ -150,14 +176,17 @@ export class UserComponent implements OnInit {
     const request = {
       origin: this.startPoint,
       destination: this.endPoint,
-      travelMode: google.maps.TravelMode['DRIVING'],
+      travelMode: google.maps.TravelMode[this.transportMode],
+      provideRouteAlternatives: true
     };
     const directionsDisplay = this.directionsDisplay;
     const userComponent = this;
-    this.directionsService.route(request, function(response, status) {
+    this.directionsService.route(request, function (response, status) {
       if (status.toString() === 'OK') {
+        userComponent.inputMode = false;
+        userComponent.routes = response.routes;
         directionsDisplay.setDirections(response);
-        userComponent.findNearbyCrimeHotspots(response);
+        userComponent.findNearbyCrimeHotspots(0);
       } else {
         console.log(status);
         alert('Error Querying Route');
@@ -169,20 +198,22 @@ export class UserComponent implements OnInit {
     this.renderCrimeHotSpots(this.dummyHotSpots);
   }
 
-  findNearbyCrimeHotspots(response) {
+  findNearbyCrimeHotspots(routeID) {
+    this.currentRoute = routeID;
     this.circlesWithinRange = [];
+    this.crimeSpotNumber = 0;
     for (let i = 0; i < this.dummyHotSpots.length; i++) {
       const location = new google.maps.LatLng(this.dummyHotSpots[i].center.lat, this.dummyHotSpots[i].center.lng);
       let polyline = new google.maps.Polyline({
         path: [],
       });
       let bounds = new google.maps.LatLngBounds();
-      let legs = response.routes[0].legs;
-      for (let i = 0; i < legs.length;i++) {
+      let legs = this.routes[routeID].legs;
+      for (let i = 0; i < legs.length; i++) {
         let steps = legs[i].steps;
         for (let j = 0; j < steps.length; j++) {
           let nextSegment = steps[j].path;
-          for (let k = 0; k < nextSegment.length;k++) {
+          for (let k = 0; k < nextSegment.length; k++) {
             polyline.getPath().push(nextSegment[k]);
             bounds.extend(nextSegment[k]);
           }
@@ -192,11 +223,11 @@ export class UserComponent implements OnInit {
       if (google.maps.geometry.poly.isLocationOnEdge(
         location,
         polyline,
-        10e-3)) {
+        2 * 10e-5 * Math.sqrt(this.dummyHotSpots[i].ps))) {
         this.circlesWithinRange.push(this.dummyHotSpots[i]);
+        this.crimeSpotNumber++;
       }
     }
-    console.log(this.circlesWithinRange);
     this.renderCrimeHotSpots(this.circlesWithinRange);
   }
 }

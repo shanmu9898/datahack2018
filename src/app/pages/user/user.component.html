@@ -4,27 +4,54 @@
 <br>
 <div class="row">
   <div class="col-md-3 location-input">
-    <div class="wrapper">
-      <div>Start</div>
-      <input
-        google-place
-        type="text"
-        class="google-place-input"
-        (onSelect)="setStart($event)"
-        placeholder="Type to search..">
+    <div *ngIf="inputMode">
+      <div class="wrapper">
+        <div>Start</div>
+        <input
+          google-place
+          type="text"
+          class="google-place-input"
+          (onSelect)="setStart($event)"
+          placeholder="Type to search..">
+      </div>
+      <div class="wrapper">
+        <div>End</div>
+        <input
+          google-place
+          type="text"
+          class="google-place-input"
+          (onSelect)="setEnd($event)"
+          placeholder="Type to search..">
+      </div>
+      <div class="wrapper">
+        <div>Transport mode</div>
+        <select [(ngModel)]="transportMode">
+          <option *ngFor="let marker of transportModes" [value]="marker.value">{{marker.text}}</option>
+        </select>
+      </div>
+      <div class="wrapper">
+        <div>Time</div>
+        <select [(ngModel)]="timePeriod">
+          <option *ngFor="let marker of timePeriods" [value]="marker.value">{{marker.text}}</option>
+        </select>
+      </div>
+      <div class="wrapper">
+      </div>
+      <button type="button" (click)="findShortestRoute()" class="btn btn-primary btn-block">Show Result</button>
+      <br>
     </div>
-    <div class="wrapper">
-      <div>End</div>
-      <input
-        google-place
-        type="text"
-        class="google-place-input"
-        (onSelect)="setEnd($event)"
-        placeholder="Type to search..">
+    <div *ngIf="!inputMode">
+      <div class="card" *ngFor="let route of routes, let i = index" (click)="renderRoute(i)">
+        <div class="card-body" style="font-weight: bold">Route {{i + 1}}
+        </div>
+        <div class="alert alert-warning" *ngIf="currentRoute==i" role="alert">
+          This route passes through {{crimeSpotNumber}} crime hotspots.
+        </div>
+      </div>
+      <br>
+      <button type="button" (click)="inputMode = true" class="btn btn-primary btn-block">Back to Input</button>
     </div>
-    <button type="button" (click)="findShortestRoute()" class="btn btn-primary">Show Result</button>
-    <br>
-    <button type="button" (click)="showAllHotspots()" class="btn btn-primary">Show All Crime Hotspots</button>
+    <button type="button" (click)="showAllHotspots()" class="btn btn-success btn-block">Show All Crime Hotspots</button>
   </div>
   <div class="col-md-9">
     <div class="text-center">
