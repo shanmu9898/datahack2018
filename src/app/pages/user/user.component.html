@@ -1,0 +1,32 @@
+  <div style="text-align:center" class="page-title">
+    <h1>Crime Alert</h1>
+  </div>
+  <br>
+  <div class="row" >
+    <div class="col-md-2 location-input">
+      <div>Start</div>
+      <input
+        google-place
+        type="text"
+        class="google-place-input"
+        (onSelect)="setStart($event)"
+        placeholder="Type to search..">
+      <div>End</div>
+      <input
+        google-place
+        type="text"
+        class="google-place-input"
+        (onSelect)="setEnd($event)"
+        placeholder="Type to search..">
+      <br><br>
+      <button type="button" (click)="findShortestRoute()" class="btn btn-primary">Show Result</button>
+      <button type="button" (click)="showAllHotspots()" class="btn btn-primary">Show All Crime Hotspots</button>
+    </div>
+    <div class="col-md-10">
+      <div class="text-center">
+        <h3>
+          <div #gmap style="width:100%;height:600px" ></div>
+        </h3>
+      </div>
+    </div>
+  </div>
