@@ -18,17 +18,50 @@ export class CrimeComponent implements OnInit {
   @ViewChild('gmap') gmapElement: any;
   map: google.maps.Map;
   circles: google.maps.Circle[] = [];
+
   crimeTypes = [
     'Dummy1', 'Dummy2'
   ];
   timePeriods = [
-    '0-2', '2-4', '4-6', '6-8', '8-10', '10-12'
+    {'text': '0:00-4:00', value: 200},
+    {'text': '4:00-8:00', value: 600},
+    {'text': '8:00-12:00', value: 1000},
+    {'text': '12:00-16:00', value: 1400},
+    {'text': '16:00-20:00', value: 1800},
+    {'text': '20:00-24:00', value: 2200},
   ];
-  periods = ['am', 'pm'];
+  months = [
+    {'text': 'Jan', value: 1},
+    {'text': 'Feb', value: 2},
+    {'text': 'Mar', value: 3},
+    {'text': 'Apr', value: 4},
+    {'text': 'May', value: 5},
+    {'text': 'Jun', value: 6},
+    {'text': 'Jul', value: 7},
+    {'text': 'Aug', value: 8},
+    {'text': 'Sep', value: 9},
+    {'text': 'Oct', value: 10},
+    {'text': 'Nov', value: 11},
+    {'text': 'Dec', value: 12},
+  ];
+  weeks = [1, 2, 3, 4];
+  weekdays = [
+    {'text': 'Mon', value: 1},
+    {'text': 'Tue', value: 2},
+    {'text': 'Wed', value: 3},
+    {'text': 'Thu', value: 4},
+    {'text': 'Fri', value: 5},
+    {'text': 'Sat', value: 6},
+    {'text': 'Sun', value: 7},
+  ];
+  areaIDs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
 
-  selectedCrimeType = null;
-  selectedTimePeriod = null;
-  selectedPeriod = this.periods[0];
+  selectedCrimeType;
+  selectedMonth;
+  selectedWeek;
+  selectedWeekday;
+  selectedTimePeriod;
+  selectedAreaID;
 
   constructor(private communicationService: ServerCommunicationService) { }
 
@@ -53,8 +86,11 @@ export class CrimeComponent implements OnInit {
     /**
      this.communicationService.requestHotSpots(
      this.selectedCrimeType,
+     this.selectedMonth,
+     this.selectedWeek,
+     this.selectedWeekday,
      this.selectedTimePeriod,
-     this.selectedPeriod).then( data => {
+     this.selectedAreaID).then(data => {
         console.log(data);
     }, err => {
       alert(err);

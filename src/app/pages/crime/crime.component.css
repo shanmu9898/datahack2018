@@ -4,3 +4,7 @@ button, input{
 .selection {
   align-items: center;
 }
+
+.wrapper {
+  margin-bottom: 10px;
+}

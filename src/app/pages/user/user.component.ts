@@ -110,7 +110,7 @@ export class UserComponent implements OnInit {
 
   renderCrimeHotSpots(circles) {
     this.clearCircles();
-    //const crimeHotSpots = this.circlesWithinRange;
+    // const crimeHotSpots = this.circlesWithinRange;
     const crimeHotSpots = circles;
     for (let i = 0; i < crimeHotSpots.length; i++) {
       const hotSpot = new google.maps.Circle({

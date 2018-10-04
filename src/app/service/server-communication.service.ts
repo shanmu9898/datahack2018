@@ -7,7 +7,12 @@ import {HttpClient} from '@angular/common/http';
 export class ServerCommunicationService {
   url = '';
   constructor(private http: HttpClient) { }
-  requestHotSpots(crime, time, period) {
+  requestHotSpots(  selectedCrimeType,
+                    selectedMonth,
+                    selectedWeek,
+                    selectedWeekday,
+                    selectedTimePeriod,
+                    selectedAreaID) {
     const http = this.http;
     const body = {};
     return new Promise(function(resolve, reject) {
