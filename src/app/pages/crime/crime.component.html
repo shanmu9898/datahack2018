@@ -1,3 +1,10 @@
+<ngx-spinner
+  bdColor="rgba(51,51,51,0.8)"
+  size="medium"
+  color="#fff"
+  type="cube-transition">
+  <p style="font-size: 20px; color: white">Loading...</p>
+</ngx-spinner>
 <div style="text-align:center" class="page-title">
   <h1>Crime Tracker</h1>
 </div>
@@ -20,7 +27,7 @@
       <div class="wrapper">
         <div>Week</div>
         <select [(ngModel)]="selectedWeek">
-          <option *ngFor="let marker of weeks" [value]="marker">{{marker}}</option>
+          <option *ngFor="let marker of weeks" [value]="marker">{{marker+1}}</option>
         </select>
       </div>
       <div class="wrapper">
@@ -37,18 +44,35 @@
       </div>
       <div class="wrapper">
         <div>Area ID</div>
-        <select [(ngModel)]="selectedAreaID">
-          <option *ngFor="let marker of areaIDs" [value]="marker">{{marker}}</option>
-        </select>
+        <input
+          [(ngModel)]="selectedAreaID"
+          placeholder="Area ID">
       </div>
-      <button type="button" (click)="queryServer()" class="btn btn-primary">Show Result</button>
+      <button type="button" (click)="queryServer()" class="btn btn-primary btn-block">Show Result</button>
+      <br>
+      <button class="btn btn-block btn-success" (click)="openModal(content)">Detailed Information</button>
+
     </div>
   </div>
   <div class="col-md-9">
     <div class="text-center">
       <h3>
-        <div #gmap style="width:100%;height:450px"></div>
+        <div #gmap style="width:100%;height:500px"></div>
       </h3>
     </div>
   </div>
+  <ng-template #content let-modal>
+    <div class="modal-header">
+      <h4 class="modal-title">Prediction for number of {{selectedCrimeType}} case</h4>
+      <button type="button" class="close" aria-label="Close" (click)="modal.close('Close')">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>The predicted number of {{selectedCrimeType}} cases based on the parameter given is {{predictedCases}}</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline-dark" (click)="modal.close('Save click')">Close</button>
+    </div>
+  </ng-template>
 </div>

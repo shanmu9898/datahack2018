@@ -13,6 +13,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { UserComponent } from './pages/user/user.component';
 import { GooglePlacesDirective } from './google-places.directive';
 import { CrimeComponent } from './pages/crime/crime.component';
+import { NgxSpinnerModule } from 'ngx-spinner';
+import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 
 
 @NgModule({
@@ -30,6 +32,8 @@ import { CrimeComponent } from './pages/crime/crime.component';
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
     HttpClientModule,
+    NgxSpinnerModule,
+    NgbModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

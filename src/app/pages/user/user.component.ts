@@ -3,6 +3,9 @@
 import {Component, NgZone, OnInit, ViewChild} from '@angular/core';
 import {AppComponent} from '../../app.component';
 import {ServerCommunicationService} from '../../service/server-communication.service';
+import { NgxSpinnerService } from 'ngx-spinner';
+import {CrimeComponent} from '../crime/crime.component';
+
 
 @Component({
   selector: 'app-user',
@@ -22,12 +25,12 @@ export class UserComponent implements OnInit {
     {'text': 'Bicycling', value: 'BICYCLING'}
   ];
   timePeriods = [
-    {'text': '0:00-4:00', value: 200},
-    {'text': '4:00-8:00', value: 600},
-    {'text': '8:00-12:00', value: 1000},
-    {'text': '12:00-16:00', value: 1400},
-    {'text': '16:00-20:00', value: 1800},
-    {'text': '20:00-24:00', value: 2200},
+    {'text': '0:00-4:00', value: 0},
+    {'text': '4:00-8:00', value: 1},
+    {'text': '8:00-12:00', value: 2},
+    {'text': '12:00-16:00', value: 3},
+    {'text': '16:00-20:00', value: 4},
+    {'text': '20:00-24:00', value: 5},
   ];
   @ViewChild('gmap') gmapElement: any;
   map: google.maps.Map;
@@ -45,23 +48,11 @@ export class UserComponent implements OnInit {
   routes: any = null;
   crimeSpotNumber = 0;
   currentRoute = 0;
-  dummyHotSpots = [
-    {
-      'crime': 'Burglary', 'center': {lat: 34.152235, lng: -118.143683}, 'ps': 60, 'intensity': 3
-    },
-    {
-      'crime': 'Burglary', 'center': {lat: 34.067, lng: -118.203683}, 'ps': 200, 'intensity': 2
-    },
-    {
-      'crime': 'Burglary', 'center': {lat: 34.172235, lng: -118.123683}, 'ps': 80, 'intensity': 1
-    },
-    {
-      'crime': 'Burglary', 'center': {lat: 34.087, lng: -118.103683}, 'ps': 250, 'intensity': 4
-    }
-  ];
+  hotspots: any[] = [];
 
   constructor(private communicationService: ServerCommunicationService,
-              private zone: NgZone) {
+              private zone: NgZone,
+              private spinner: NgxSpinnerService) {
   }
 
   ngOnInit() {
@@ -116,35 +107,35 @@ export class UserComponent implements OnInit {
   }
 
   queryServer() {
-    /**
-     this.communicationService.requestHotSpots(
-     this.selectedCrimeType,
-     this.selectedTimePeriod,
-     this.selectedPeriod).then( data => {
+    let obj = this;
+    return new Promise(function(resolve, reject) {
+      obj.communicationService.requestHotSpotsForUsers(obj.timePeriod).then( data => {
         console.log(data);
-    }, err => {
-      alert(err);
+        obj.hotspots = data['centroids'];
+        resolve(data);
+      }, err => {
+        reject(err);
+      });
     });
-     **/
-    this.renderCrimeHotSpots(this.circlesWithinRange);
   }
 
-  renderCrimeHotSpots(circles) {
+  renderCrimeHotSpots(centroids) {
     this.clearCircles();
-    // const crimeHotSpots = this.circlesWithinRange;
-    const crimeHotSpots = circles;
+    const crimeHotSpots = centroids;
     for (let i = 0; i < crimeHotSpots.length; i++) {
+      let centroid = crimeHotSpots[i];
+      let color = CrimeComponent.getColorIntensity(centroid['Density']);
       const hotSpot = new google.maps.Circle({
-        strokeColor: AppComponent.INTENSITY_COLORS[crimeHotSpots[i].intensity],
+        strokeColor: color,
         strokeOpacity: 0.8,
         strokeWeight: 2,
-        fillColor: AppComponent.INTENSITY_COLORS[crimeHotSpots[i].intensity],
+        fillColor: color,
         fillOpacity: 0.35,
         map: this.map,
-        center: crimeHotSpots[i].center,
-        radius: crimeHotSpots[i].ps
+        center: {'lat': centroid['Lat'], 'lng': centroid['Lng']},
+        radius: centroid['Radius'] * 1000
       });
-      const mouseOverText = `Crime: ${crimeHotSpots[i].crime}\nPredicted number of crime: ${crimeHotSpots[i].ps}`;
+      const mouseOverText = `Crime: ${centroid['Crime']}\nPredicted number of crime per year per km square: ${centroid['Density']}`;
       // circle is the google.maps.Circle-instance
       google.maps.event.addListener(hotSpot, 'mouseover', function () {
         this.getMap().getDiv().setAttribute('title', mouseOverText);
@@ -171,7 +162,6 @@ export class UserComponent implements OnInit {
     this.circles = [];
   }
 
-
   findShortestRoute() {
     const request = {
       origin: this.startPoint,
@@ -181,29 +171,34 @@ export class UserComponent implements OnInit {
     };
     const directionsDisplay = this.directionsDisplay;
     const userComponent = this;
-    this.directionsService.route(request, function (response, status) {
-      if (status.toString() === 'OK') {
-        userComponent.inputMode = false;
-        userComponent.routes = response.routes;
-        directionsDisplay.setDirections(response);
-        userComponent.findNearbyCrimeHotspots(0);
-      } else {
-        console.log(status);
-        alert('Error Querying Route');
-      }
+    this.spinner.show();
+    let obj = this;
+    this.queryServer().then(() => {
+      this.directionsService.route(request, function (response, status) {
+        obj.spinner.hide();
+        if (status.toString() === 'OK') {
+          userComponent.inputMode = false;
+          userComponent.routes = response.routes;
+          directionsDisplay.setDirections(response);
+          userComponent.findNearbyCrimeHotspots(0);
+        } else {
+          console.log(status);
+          alert('Error Querying Route');
+        }
+      });
+    }, err => {
+      obj.spinner.hide();
+      console.log(err);
     });
-  }
 
-  showAllHotspots() {
-    this.renderCrimeHotSpots(this.dummyHotSpots);
   }
 
   findNearbyCrimeHotspots(routeID) {
     this.currentRoute = routeID;
     this.circlesWithinRange = [];
     this.crimeSpotNumber = 0;
-    for (let i = 0; i < this.dummyHotSpots.length; i++) {
-      const location = new google.maps.LatLng(this.dummyHotSpots[i].center.lat, this.dummyHotSpots[i].center.lng);
+    for (let i = 0; i < this.hotspots.length; i++) {
+      const location = new google.maps.LatLng(this.hotspots[i]['Lat'], this.hotspots[i]['Lng']);
       let polyline = new google.maps.Polyline({
         path: [],
       });
@@ -223,11 +218,15 @@ export class UserComponent implements OnInit {
       if (google.maps.geometry.poly.isLocationOnEdge(
         location,
         polyline,
-        2 * 10e-5 * Math.sqrt(this.dummyHotSpots[i].ps))) {
-        this.circlesWithinRange.push(this.dummyHotSpots[i]);
+         4 * 10e-4 * Math.sqrt(this.hotspots[i]['Radius']))) {
+        this.circlesWithinRange.push(this.hotspots[i]);
         this.crimeSpotNumber++;
       }
     }
     this.renderCrimeHotSpots(this.circlesWithinRange);
+  }
+
+  showAllHotspots() {
+    this.renderCrimeHotSpots(this.hotspots);
   }
 }

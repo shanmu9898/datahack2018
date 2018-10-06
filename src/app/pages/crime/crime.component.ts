@@ -3,6 +3,8 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {AppComponent} from '../../app.component';
 import {ServerCommunicationService} from '../../service/server-communication.service';
+import {NgxSpinnerService} from 'ngx-spinner';
+import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-crime',
@@ -33,38 +35,37 @@ export class CrimeComponent implements OnInit {
     'sex crimes'
   ];
   timePeriods = [
-    {'text': '0:00-4:00', value: 200},
-    {'text': '4:00-8:00', value: 600},
-    {'text': '8:00-12:00', value: 1000},
-    {'text': '12:00-16:00', value: 1400},
-    {'text': '16:00-20:00', value: 1800},
-    {'text': '20:00-24:00', value: 2200},
+    {'text': '0:00-4:00', value: 0},
+    {'text': '4:00-8:00', value: 1},
+    {'text': '8:00-12:00', value: 2},
+    {'text': '12:00-16:00', value: 3},
+    {'text': '16:00-20:00', value: 4},
+    {'text': '20:00-24:00', value: 5},
   ];
   months = [
-    {'text': 'Jan', value: 1},
-    {'text': 'Feb', value: 2},
-    {'text': 'Mar', value: 3},
-    {'text': 'Apr', value: 4},
-    {'text': 'May', value: 5},
-    {'text': 'Jun', value: 6},
-    {'text': 'Jul', value: 7},
-    {'text': 'Aug', value: 8},
-    {'text': 'Sep', value: 9},
-    {'text': 'Oct', value: 10},
-    {'text': 'Nov', value: 11},
-    {'text': 'Dec', value: 12},
+    {'text': 'Jan', value: 0},
+    {'text': 'Feb', value: 1},
+    {'text': 'Mar', value: 2},
+    {'text': 'Apr', value: 3},
+    {'text': 'May', value: 4},
+    {'text': 'Jun', value: 5},
+    {'text': 'Jul', value: 6},
+    {'text': 'Aug', value: 7},
+    {'text': 'Sep', value: 8},
+    {'text': 'Oct', value: 9},
+    {'text': 'Nov', value: 10},
+    {'text': 'Dec', value: 11},
   ];
-  weeks = [1, 2, 3, 4];
+  weeks = [0, 1, 2, 3];
   weekdays = [
-    {'text': 'Mon', value: 1},
-    {'text': 'Tue', value: 2},
-    {'text': 'Wed', value: 3},
-    {'text': 'Thu', value: 4},
-    {'text': 'Fri', value: 5},
-    {'text': 'Sat', value: 6},
-    {'text': 'Sun', value: 7},
+    {'text': 'Mon', value: 0},
+    {'text': 'Tue', value: 1},
+    {'text': 'Wed', value: 2},
+    {'text': 'Thu', value: 3},
+    {'text': 'Fri', value: 4},
+    {'text': 'Sat', value: 5},
+    {'text': 'Sun', value: 6},
   ];
-  areaIDs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
 
   selectedCrimeType;
   selectedMonth;
@@ -72,8 +73,22 @@ export class CrimeComponent implements OnInit {
   selectedWeekday;
   selectedTimePeriod;
   selectedAreaID;
+  hotspots: any[] = [];
+  predictedCases = 0;
 
-  constructor(private communicationService: ServerCommunicationService) { }
+  constructor(private communicationService: ServerCommunicationService,
+              private spinner: NgxSpinnerService,
+              private modalService: NgbModal) {
+  }
+
+  public static getColorIntensity(density) {
+    const index = Math.floor(density / 50);
+    if (index > 4) {
+      return AppComponent.INTENSITY_COLORS[4];
+    } else {
+      return AppComponent.INTENSITY_COLORS[index];
+    }
+  }
 
   ngOnInit() {
 
@@ -81,6 +96,14 @@ export class CrimeComponent implements OnInit {
 
   ngAfterContentInit() {
     this.map = new google.maps.Map(this.gmapElement.nativeElement, this.mapProp);
+  }
+
+  openModal(content) {
+    this.modalService.open(content, {ariaLabelledBy: 'modal-basic-title'}).result.then((result) => {
+      console.log('close');
+    }, (reason) => {
+      console.log('not close');
+    });
   }
 
   clearCircles() {
@@ -93,51 +116,43 @@ export class CrimeComponent implements OnInit {
   }
 
   queryServer() {
-    /**
-     this.communicationService.requestHotSpots(
-     this.selectedCrimeType,
-     this.selectedMonth,
-     this.selectedWeek,
-     this.selectedWeekday,
-     this.selectedTimePeriod,
-     this.selectedAreaID).then(data => {
-        console.log(data);
+    this.spinner.show();
+    this.communicationService.requestHotSpots(
+      this.selectedCrimeType,
+      this.selectedMonth,
+      this.selectedWeek,
+      this.selectedWeekday,
+      this.selectedTimePeriod,
+      this.selectedAreaID).then(data => {
+      this.predictedCases = data['prediction'];
+      this.hotspots = data['centroids'];
+      this.renderCrimeHotSpots();
+      this.spinner.hide();
     }, err => {
-      alert(err);
+      this.spinner.hide();
+      alert('Error');
     });
-     **/
-    this.renderCrimeHotSpots();
   }
+
+
 
   renderCrimeHotSpots() {
     this.clearCircles();
-    const dummyHotSpots = [
-      {
-        'crime': 'Burglary', 'center': {lat: 34.152235, lng: -118.143683}, 'ps': 40, 'intensity': 3
-      },
-      {
-        'crime': 'Burglary', 'center': {lat: 34.067, lng: -118.203683}, 'ps': 100, 'intensity': 2
-      },
-      {
-        'crime': 'Burglary', 'center': {lat: 34.172235, lng: -118.123683}, 'ps': 30, 'intensity': 1
-      },
-      {
-        'crime': 'Burglary', 'center': {lat: 34.087, lng: -118.103683}, 'ps': 150, 'intensity': 4
-      }
-    ];
-    const crimeHotSpots = dummyHotSpots;
+    const crimeHotSpots = this.hotspots;
     for (let i = 0; i < crimeHotSpots.length; i++) {
+      let centroid = crimeHotSpots[i];
+      let color = CrimeComponent.getColorIntensity(centroid['Density']);
       const hotSpot = new google.maps.Circle({
-        strokeColor: AppComponent.INTENSITY_COLORS[crimeHotSpots[i].intensity],
+        strokeColor: color,
         strokeOpacity: 0.8,
         strokeWeight: 2,
-        fillColor: AppComponent.INTENSITY_COLORS[crimeHotSpots[i].intensity],
+        fillColor: color,
         fillOpacity: 0.35,
         map: this.map,
-        center: crimeHotSpots[i].center,
-        radius: crimeHotSpots[i].ps
+        center: {'lat': centroid['Lat'], 'lng': centroid['Lng']},
+        radius: centroid['Radius'] * 1000
       });
-      const mouseOverText = `Crime: ${crimeHotSpots[i].crime}\nPredicted number of crime: ${crimeHotSpots[i].ps}`;
+      const mouseOverText = `Crime: ${centroid['Crime']}\nPredicted number of crime per year per km square: ${centroid['Density']}`;
       // circle is the google.maps.Circle-instance
       google.maps.event.addListener(hotSpot, 'mouseover', function () {
         this.getMap().getDiv().setAttribute('title', mouseOverText);
